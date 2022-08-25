@@ -1,46 +1,44 @@
-name: Flutter Workflow
-
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches:
+      - master
+      
+# on: push    # Default will running for every branch.            
+name: "Build & Release" #Defind your job name whatever you want
 jobs:
   build:
-    runs-on: macos-latest
+    # This job will run on ubuntu virtual machine
+    name: Build & Release
+    runs-on: ubuntu-latest #can use window, ubuntu macos and linux 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
+      # Setup Java environment in order to build the Android app.
+      - uses: actions/checkout@v1
+      - uses: actions/setup-java@v1
         with:
-          flutter-version: '3.0.5'
-          channel: 'stable'
-      - run: flutter build apk
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Run unit tests
-        run: flutter test --coverage
-
-      - name: Upload to code coverage
-        uses: codecov/codecov-action@v1.2.2
+          java-version: '12.x'
+      # Setup the flutter environment.
+      - uses: subosito/flutter-action@v1
         with:
-          token: ${{secrets.CODECOV_TOKEN}}
-          file: coverage/lcov.info
-
-      - name: Run integration tests
-        uses: reactivecircus/android-emulator-runner@v1
+          channel: 'stable' # 'dev', 'master', default to: 'stable'
+          flutter-version: '3.0.5' # this is your flutter version<make sure your flutter version>
+      - run: flutter pub get
+      
+      # - run: flutter test # Run widget tests for our flutter project.I'm not run for now.
+      
+      # build apk and app file
+      - run: flutter build apk --release --split-per-abi
+#       - run: |
+#           flutter build ios --no-codesign
+#           cd build/ios/iphoneos
+#           mkdir Payload
+#           cd Payload
+#           ln -s ../Runner.app
+#           cd ..
+#           zip -r app.ipa Payload
+          
+      # Upload generated apk and app to the artifacts.
+      - name: Push to Releases #Defind your name whatever you want
+        uses:  ncipollo/release-action@v1
         with:
-          api-level: 29
-          script: flutter test integration_test
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: release-apk
-          path: build/app/outputs/apk/release/app-release.apk
-
-      - name: Upload Screenshoots
-        uses: actions/upload-artifact@v3
-        with:
-          name: Test result screenshots
-          path: screenshots/*.png
+          artifacts: "build/app/outputs/apk/release/*,build/ios/iphoneos/app.ipa"
+          tag: v1.0.${{ github.run_number }} #release tap will show in github,you can change what version you want
