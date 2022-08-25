@@ -38,7 +38,7 @@ class SongProvider {
     _songs = result.collection.cast();
     _index = result.index.cast();
 
-    _songs.forEach((song) async {
+    for (Song song in _songs) {
       song
         ..artist = artistProvider.byId(song.artistId)
         ..album = albumProvider.byId(song.albumId);
@@ -46,7 +46,7 @@ class SongProvider {
       if (await cacheProvider.has(song: song)) {
         cacheProvider.songs.add(song);
       }
-    });
+    }
 
     coverImageStack = CoverImageStack(songs: _songs);
   }
